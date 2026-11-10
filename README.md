@@ -38,7 +38,6 @@ Treningsoppsett: Adam-optimalisering (læringsrate 0,001), cross-entropy-tap og 
 | `01_mnist_cnn.ipynb` | Jupyter-notatbok: laster data, definerer og trener modellen, og eksporterer til ONNX |
 | `mnist_cnn.pt` | Trente vekter (PyTorch `state_dict`) |
 | `docs/` | Nettsiden som publiseres med GitHub Pages (`index.html` og `mnist_cnn.onnx`) |
-| `app.py`, `index.html` | Alternativ versjon med Flask-backend som kjører modellen i Python |
 
 ## Kjøre selv
 
@@ -62,13 +61,6 @@ python -m http.server -d docs
 ```
 
 Åpne http://localhost:8000. Siden må hentes via en server. Åpner du `index.html` direkte som fil, får ikke nettleseren lastet modellen.
-
-**Flask-versjonen:** `app.py` importerer modellen fra `model.py`. Den filen må inneholde `CNN`-klassen fra notatboken.
-
-```bash
-pip install flask
-flask run
-```
 
 ## Teknologi
 
