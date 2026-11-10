@@ -45,7 +45,7 @@ Treningsoppsett: Adam-optimalisering (læringsrate 0,001), cross-entropy-tap og 
 Krever Python 3.10 eller nyere.
 
 ```bash
-git clone https://github.com/runesor/cnn-digit-recognition.git
+git clone https://github.com/RuneSor/cnn-digit-recognition.git
 cd cnn-digit-recognition
 
 python3 -m venv .venv
