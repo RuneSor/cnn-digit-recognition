@@ -1,6 +1,6 @@
 # Gjenkjenning av håndskrevne sifre med CNN
 
-Et konvolusjonelt nevralt nettverk (CNN) trent i PyTorch på MNIST-datasettet, med en nettside der du kan tegne et tall og få det gjenkjent.
+Et konvolusjonelt nevralt nettverk (CNN) trent i PyTorch på [MNIST-datasettet](http://yann.lecun.com/exdb/mnist/), med en nettside der du kan tegne et tall og få det gjenkjent.
 
 **[Prøv det her](https://runesor.github.io/cnn-digit-recognition/)**: tegn et siffer med mus, finger eller Apple Pencil, og trykk «Gjett».
 
@@ -8,7 +8,7 @@ Modellen kjører direkte i nettleseren med [ONNX Runtime Web](https://onnxruntim
 
 ## Resultat
 
-**98,8 % nøyaktighet** på de 10 000 testbildene i MNIST etter 10 epoker.
+**99,3 % nøyaktighet** på de 10 000 [testbildene i MNIST](https://huggingface.co/datasets/ylecun/mnist/viewer/mnist/test) etter 10 epoker.
 
 ## Modellen
 
