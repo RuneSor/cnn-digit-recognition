@@ -15,12 +15,16 @@ Modellen kjører direkte i nettleseren med [ONNX Runtime Web](https://onnxruntim
 ```
 Inndata: 1 × 28 × 28 (gråtonebilde)
   │
-  ├─ Conv2d(1 → 10, 5×5) → MaxPool(2) → ReLU        → 10 × 12 × 12
-  ├─ Conv2d(10 → 20, 5×5) → Dropout2d → MaxPool(2) → ReLU   → 20 × 4 × 4
-  ├─ Flatten                                          → 320
-  ├─ Linear(320 → 50) → ReLU → Dropout
-  └─ Linear(50 → 10)                                  → ett tall per siffer 0–9
+  ├─ Conv2d(1 → 32, 3×3) → BatchNorm → ReLU
+  ├─ Conv2d(32 → 32, 3×3) → BatchNorm → ReLU → MaxPool(2)    → 32 × 14 × 14
+  ├─ Conv2d(32 → 64, 3×3) → BatchNorm → ReLU
+  ├─ Conv2d(64 → 64, 3×3) → BatchNorm → ReLU → MaxPool(2)    → 64 × 7 × 7
+  ├─ Flatten                                                  → 3136
+  ├─ Linear(3136 → 128) → ReLU → Dropout(0,3)
+  └─ Linear(128 → 10)                                         → ett tall per siffer 0–9
 ```
+
+Alle konvolusjonene bruker padding 1, så bildestørrelsen endres bare ved pooling. Modellen har rundt 470 000 vekter.
 
 Treningsoppsett: Adam-optimalisering (læringsrate 0,001), cross-entropy-tap og batcher på 100 bilder.
 
