@@ -53,7 +53,9 @@ Treningsoppsett: Adam-optimalisering (læringsrate 0,001), cross-entropy-tap og 
 |---|---|
 | `01_mnist_cnn.ipynb` | Jupyter-notatbok: laster data, definerer og trener modellen, og eksporterer til ONNX |
 | `mnist_cnn.pt` | Trente vekter (PyTorch `state_dict`) |
-| `docs/` | Nettsiden som publiseres med GitHub Pages (`index.html` og `mnist_cnn.onnx`) |
+| `02_ikke_tall.ipynb` | Samme modell med en 11. kategori, «ikke tall», trent på bokstaver ([EMNIST](https://www.nist.gov/itl/products-and-services/emnist-dataset)), tegninger ([Quick, Draw!](https://github.com/googlecreativelab/quickdraw-dataset)), skribling og sifferpar |
+| `mnist_cnn_ikke_tall.pt` | Trente vekter for modellen med «ikke tall» |
+| `docs/` | Nettsiden som publiseres med GitHub Pages: `index.html` bruker `mnist_cnn.onnx` (bare sifre), og `nan.html` bruker `mnist_cnn_ikke_tall.onnx` (med «ikke tall»). En meny øverst bytter mellom dem. |
 
 ## Kjøre selv
 
