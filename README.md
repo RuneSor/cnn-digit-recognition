@@ -10,6 +10,18 @@ Modellen kjører direkte i nettleseren med [ONNX Runtime Web](https://onnxruntim
 
 **99,3 % nøyaktighet** på de 10 000 [testbildene i MNIST](https://huggingface.co/datasets/ylecun/mnist/viewer/mnist/test) etter 10 epoker.
 
+## Hva er et CNN?
+
+Et konvolusjonelt nevralt nettverk (CNN) er en type nevralt nettverk laget for bilder. I stedet for å se på alle pikslene på én gang, flytter det små filtre (her 3×3 piksler) over bildet. Hvert filter leter etter ett bestemt mønster, for eksempel en loddrett kant eller en bue, og lager et kart over hvor i bildet mønsteret finnes. Filtrene er ikke programmert for hånd, men lært fra eksempler under treningen.
+
+Lagene bygger på hverandre:
+
+- **Konvolusjonslag** finner mønstre. De første lagene finner enkle kanter og streker, mens de senere kombinerer dem til mer sammensatte former, som løkker og kryss.
+- **Pooling** krymper bildet til halv størrelse ved å beholde den sterkeste verdien i hvert 2×2-område. Det gjør modellen mindre følsom for nøyaktig hvor i bildet streken ligger.
+- **Fullt koblede lag** til slutt bruker formene som er funnet til å avgjøre hvilket siffer det er, og gir ett tall per siffer 0–9.
+
+Fordi det samme filteret brukes over hele bildet, trenger et CNN langt færre vekter enn et vanlig nettverk, og det kjenner igjen et mønster uansett hvor i bildet det dukker opp.
+
 ## Modellen
 
 ```
