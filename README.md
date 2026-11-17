@@ -47,6 +47,22 @@ Treningsoppsett: Adam-optimalisering (læringsrate 0,001), cross-entropy-tap og 
 3. Bildet sendes til modellen (`docs/mnist_cnn.onnx`). Normalisering og softmax er bygget inn i ONNX-modellen, så den gir sannsynligheter tilbake direkte.
 4. Siffer, sikkerhet og et søylediagram for alle ti sifrene vises på siden.
 
+## Generere nye tall
+
+`03_generer_tall.ipynb` snur problemet: i stedet for å gjenkjenne sifre skal modellen *lage* nye. Den bruker en **betinget variational autoencoder (cVAE)**:
+
+- **Koderen** presser et bilde sammen til 8 tall, det *latente rommet*, som beskriver håndskriften: helning, tykkelse, bredde og så videre.
+- **Dekoderen** tegner et 28×28-bilde ut fra de 8 tallene og hvilket siffer det skal være.
+- Under treningen tvinges de latente tallene til å følge en standard normalfordeling. Etterpå kan vi trekke 8 tilfeldige tall, velge et siffer og få et nytt bilde som ikke finnes i datasettet.
+
+Fordi sifferet gis inn separat, beskriver de latente tallene bare *stilen*. Den samme stilen kan derfor brukes på alle ti sifrene.
+
+**Evaluering:** Vi lager 10 000 bilder, 1000 av hvert siffer, og lar CNN-ene fra 01 og 02 se på dem. CNN-et fra 01 gjenkjenner **97,6 %** som sifferet vi ba om.
+
+**Et funn underveis:** Modellen med «ikke tall» fra 02 mente først at 94 % av de genererte bildene *ikke* var tall. Årsaken er at VAE-bilder er litt uskarpe. Når ekte MNIST-sifre gjøres like uskarpe, kaller modellen 100 % av dem «ikke tall». Den har altså lært snarveien «uskarp strek betyr ikke tall», trolig fordi EMNIST-bokstavene den ble trent på er mer uskarpe enn MNIST. Når vi øker kontrasten på de genererte bildene, faller andelen til 4 %. Denne skjerpingen er bygget inn i `docs/generator.onnx`.
+
+På nettsiden `generer.html` velger du et siffer og drar i 8 glidebrytere, én for hvert latent tall. Du ser da bildet endre seg, og den samme stilen brukt på alle ti sifrene.
+
 ## Innhold
 
 | Fil / mappe | Beskrivelse |
@@ -55,7 +71,9 @@ Treningsoppsett: Adam-optimalisering (læringsrate 0,001), cross-entropy-tap og 
 | `mnist_cnn.pt` | Trente vekter (PyTorch `state_dict`) |
 | `02_ikke_tall.ipynb` | Samme modell med en 11. kategori, «ikke tall», trent på bokstaver ([EMNIST](https://www.nist.gov/itl/products-and-services/emnist-dataset)), tegninger ([Quick, Draw!](https://github.com/googlecreativelab/quickdraw-dataset)), skribling og sifferpar |
 | `mnist_cnn_ikke_tall.pt` | Trente vekter for modellen med «ikke tall» |
-| `docs/` | Nettsiden som publiseres med GitHub Pages: `index.html` bruker `mnist_cnn.onnx` (bare sifre), og `nan.html` bruker `mnist_cnn_ikke_tall.onnx` (med «ikke tall»). En meny øverst bytter mellom dem. |
+| `03_generer_tall.ipynb` | Betinget VAE som genererer nye sifre, evaluert med CNN-ene fra 01 og 02, og eksportert til ONNX |
+| `cvae.pt` | Trente vekter for VAE-en |
+| `docs/` | Nettsiden som publiseres med GitHub Pages: `index.html` bruker `mnist_cnn.onnx` (bare sifre), `nan.html` bruker `mnist_cnn_ikke_tall.onnx` (med «ikke tall»), og `generer.html` bruker `generator.onnx` (generering). En meny øverst bytter mellom dem. |
 
 ## Kjøre selv
 
@@ -70,7 +88,7 @@ source .venv/bin/activate
 pip install torch torchvision matplotlib jupyterlab onnx onnxscript onnxruntime
 ```
 
-**Trene modellen:** Åpne `01_mnist_cnn.ipynb` i Jupyter eller VS Code og kjør cellene ovenfra og ned. MNIST lastes ned automatisk til `data/`. Eksportcellen lagrer en ny `docs/mnist_cnn.onnx`.
+**Trene modellen:** Åpne `01_mnist_cnn.ipynb` i Jupyter eller VS Code og kjør cellene ovenfra og ned. MNIST lastes ned automatisk til `data/`. Eksportcellen lagrer en ny `docs/mnist_cnn.onnx`. På samme måte lagrer `03_generer_tall.ipynb` en ny `docs/generator.onnx`. Den trenger `mnist_cnn.pt` og `mnist_cnn_ikke_tall.pt` til evalueringen.
 
 **Teste nettsiden lokalt:**
 

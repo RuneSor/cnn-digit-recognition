@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Generer håndskrevne tall</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 16px;
+      background: #f4f4f5;
+      color: #18181b;
+    }
+    canvas { background: #000; border-radius: 12px; }
+    #big { width: min(280px, 80vw); aspect-ratio: 1; }
+    button {
+      font-size: 1.1rem;
+      padding: 8px 20px;
+      margin: 12px 6px;
+      border-radius: 8px;
+      border: 1px solid #a1a1aa;
+      background: #fff;
+      cursor: pointer;
+    }
+    #digits { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+    #digits button { margin: 0; padding: 6px 0; width: 2.4rem; }
+    #digits button[aria-pressed="true"] { background: #18181b; border-color: #18181b; color: #fff; }
+    #sliders {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 10px;
+      align-items: center;
+      max-width: 320px;
+      margin: 8px auto;
+      font-size: 0.9rem;
+    }
+    #sliders input { width: 100%; }
+    #all { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    #all canvas { width: 48px; height: 48px; border-radius: 6px; cursor: pointer; }
+    #status { min-height: 1.4em; }
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    nav a {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid #a1a1aa;
+      background: #fff;
+      color: inherit;
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+    nav a[aria-current="page"] {
+      background: #18181b;
+      border-color: #18181b;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html">Bare sifre</a>
+    <a href="nan.html">Med «ikke tall»</a>
+    <a href="generer.html" aria-current="page">Generer tall</a>
+  </nav>
+  <h1>Generer et håndskrevet tall</h1>
+  <p>Velg et siffer og dra i glidebryterne. Hver glidebryter er ett av de 8 tallene som beskriver håndskriften.</p>
+
+  <div id="digits"></div>
+  <canvas id="big" width="280" height="280"></canvas><br>
+  <button id="random">Tilfeldig stil</button>
+  <button id="reset">Nullstill</button>
+  <p id="status">Laster modell …</p>
+  <div id="sliders"></div>
+
+  <p>Samme stil brukt på alle sifrene:</p>
+  <div id="all"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/ort.min.js"></script>
+  <script>
+    const LATENT = 8;
+    const big = document.getElementById("big");
+    const status = document.getElementById("status");
+    const digitsEl = document.getElementById("digits");
+    const slidersEl = document.getElementById("sliders");
+    const allEl = document.getElementById("all");
+
+    let digit = 3;
+    const z = new Float32Array(LATENT);
+
+    // ---- Siffervelger ----
+    for (let d = 0; d < 10; d++) {
+      const b = document.createElement("button");
+      b.textContent = d;
+      b.addEventListener("click", () => { digit = d; update(); });
+      digitsEl.append(b);
+    }
+
+    // ---- Glidebrytere, én per latent verdi ----
+    const sliders = [];
+    for (let i = 0; i < LATENT; i++) {
+      slidersEl.insertAdjacentHTML("beforeend", `<label for="z${i}">z${i}</label>`);
+      const s = document.createElement("input");
+      Object.assign(s, { type: "range", id: `z${i}`, min: -3, max: 3, step: 0.05, value: 0 });
+      s.addEventListener("input", () => { z[i] = Number(s.value); update(); });
+      slidersEl.append(s);
+      sliders.push(s);
+    }
+
+    // ---- Små bilder av alle sifrene med samme stil ----
+    const small = [];
+    for (let d = 0; d < 10; d++) {
+      const c = document.createElement("canvas");
+      c.width = c.height = 28;
+      c.title = `Velg ${d}`;
+      c.addEventListener("click", () => { digit = d; update(); });
+      allEl.append(c);
+      small.push(c);
+    }
+
+    // Standard normalfordeling (Box–Muller), som modellen ble trent med
+    function randn() {
+      return Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random());
+    }
+
+    function setZ(values) {
+      values.forEach((v, i) => {
+        z[i] = Math.max(-3, Math.min(3, v));
+        sliders[i].value = z[i];
+      });
+      update();
+    }
+
+    document.getElementById("random").addEventListener("click", () =>
+      setZ(Array.from({ length: LATENT }, randn)));
+    document.getElementById("reset").addEventListener("click", () =>
+      setZ(new Array(LATENT).fill(0)));
+
+    // ---- Modellen ----
+    let session = null;
+
+    async function generate(d) {
+      const oneHot = new Float32Array(10);
+      oneHot[d] = 1;
+      const out = await session.run({
+        z: new ort.Tensor("float32", z.slice(), [1, LATENT]),
+        digit: new ort.Tensor("float32", oneHot, [1, 10]),
+      });
+      return out.image.data;   // 28 × 28 verdier 0–1
+    }
+
+    function draw(canvas, pixels) {
+      const tmp = document.createElement("canvas");
+      tmp.width = tmp.height = 28;
+      const tctx = tmp.getContext("2d");
+      const img = tctx.createImageData(28, 28);
+      for (let i = 0; i < 28 * 28; i++) {
+        const v = Math.round(pixels[i] * 255);
+        img.data.set([v, v, v, 255], i * 4);
+      }
+      tctx.putImageData(img, 0, 0);
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(tmp, 0, 0, canvas.width, canvas.height);
+    }
+
+    // Tegn på nytt, men aldri mer enn én beregning om gangen
+    let busy = false, again = false;
+    async function update() {
+      for (const [i, b] of [...digitsEl.children].entries()) b.setAttribute("aria-pressed", i === digit);
+      if (!session) return;
+      if (busy) { again = true; return; }
+      busy = true;
+      do {
+        again = false;
+        draw(big, await generate(digit));
+        for (let d = 0; d < 10; d++) draw(small[d], await generate(d));
+      } while (again);
+      busy = false;
+    }
+
+    ort.InferenceSession.create("generator.onnx")
+      .then((s) => {
+        session = s;
+        status.textContent = "";
+        update();
+      })
+      .catch((err) => {
+        status.textContent = "Klarte ikke å laste modellen.";
+        console.error(err);
+      });
+    update();
+  </script>
+</body>
+</html>
